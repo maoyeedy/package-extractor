@@ -108,6 +108,7 @@
     <p><span data-lang="creator">Created by </span><a href="https://x.com/peraperavrc" target="_blank">@peraperavrc</a></p>
 
     <div id="dropZone" data-lang="dropZone">Drag and drop Unity package here</div>
+    <input type="file" id="fileInput" style="display: none;" accept=".unitypackage">
     <div class="checkbox-container">
         <input type="checkbox" id="excludeMeta" checked>
         <label for="excludeMeta" data-lang="excludeMeta">Exclude .meta files</label>
@@ -262,6 +263,7 @@
         }
 
         const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
         const fileList = document.getElementById('fileList');
         const excludeMetaCheckbox = document.getElementById('excludeMeta');
         const categorizeByExtensionCheckbox = document.getElementById('categorizeByExtension');
@@ -282,6 +284,22 @@
             e.stopPropagation();
 
             const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.name.endsWith('.unitypackage')) {
+                    await processUnityPackage(file);
+                } else {
+                    alert(translations[currentLanguage].invalidFile);
+                }
+            }
+        });
+
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', async (e) => {
+            const files = e.target.files;
             if (files.length > 0) {
                 const file = files[0];
                 if (file.name.endsWith('.unitypackage')) {
