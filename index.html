@@ -93,12 +93,20 @@
             display: none;
             z-index: 1000;
         }
+        .file-info {
+            font-size: 0.8em;
+            color: #666;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
-    <h1 data-lang="title">Unity Package Extractor</h1>
-    <p><span data-lang="description">This implementation is based on the </span><a href="https://github.com/bengreenier-archive/unity-package-extract" target="_blank">unity-package-extract</a><span data-lang="description-end"> library by bengreenier.</span></p>
+    <h1 data-lang="title">Package Extractor</h1>
+    <p><span data-lang="description">You can individually retrieve textures, model data, and other files within the .unitypackage extension from your browser. </span></p>
+
+    <p><span data-lang="repository">Repository: </span><a href="https://github.com/peraperavrc/package-extractor" target="_blank">peraperavrc/package-extractor</a></p>
     <p><span data-lang="creator">Created by </span><a href="https://x.com/peraperavrc" target="_blank">@peraperavrc</a></p>
+
     <div id="dropZone" data-lang="dropZone">Drag and drop Unity package here</div>
     <div class="checkbox-container">
         <input type="checkbox" id="excludeMeta" checked>
@@ -116,6 +124,10 @@
         <input type="checkbox" id="enablePreview" checked>
         <label for="enablePreview" data-lang="enablePreview">Enable texture preview</label>
     </div>
+    <div class="checkbox-container">
+        <input type="checkbox" id="showFileSize" checked>
+        <label for="showFileSize" data-lang="showFileSize">Show file size</label>
+    </div>
     <div id="fileList"></div>
     <div class="download-all">
         <button id="downloadAllBtn" style="display: none;" data-lang="downloadAll">Download All as ZIP</button>
@@ -125,14 +137,16 @@
         const translations = {
             en: {
                 title: "Package Extractor",
-                description: "This implementation is based on the ",
-                "description-end": " library by bengreenier.",
+                description: "You can individually retrieve textures, model data, and other files within the .unitypackage extension from your browser. ",
+                "description-end": "This implementation is based on the ",
                 creator: "Created by ",
-                dropZone: "Drag and drop Unity package here",
+                repository: "Repository: ",
+                dropZone: "Drag and drop .unitypackage here",
                 excludeMeta: "Exclude .meta files",
                 categorizeByExtension: "Categorize by file extension",
                 maintainStructure: "Maintain file structure",
                 enablePreview: "Enable texture preview",
+                showFileSize: "Show file size",
                 downloadAll: "Download All as ZIP",
                 downloadCategory: "Download {0} as ZIP",
                 errorMessage: "An error occurred while processing the package. Please check the console for details.",
@@ -140,14 +154,16 @@
             },
             ja: {
                 title: "Package Extractor",
-                description: "実装は",
-                "description-end": "ライブラリをベースにしています。",
+                description: "ブラウザーから.unitypackageの拡張子の中にあるテクスチャやモデルデータを見ることができます。",
+                "description-end": "この実装はunity-package-extractライブラリを参考にしています。",
                 creator: "作成者: ",
-                dropZone: "Unity Packagesをここにドラッグ＆ドロップしてください",
+                repository: "リポジトリ: ",
+                dropZone: ".unitypackageをここにドラッグ＆ドロップしてください",
                 excludeMeta: ".metaファイルを除外する",
                 categorizeByExtension: "ファイル拡張子で分類する",
                 maintainStructure: "ファイル構造を維持する",
                 enablePreview: "テクスチャのプレビューを有効にする",
+                showFileSize: "ファイルサイズを表示する",
                 downloadAll: "すべてをZIPでダウンロード",
                 downloadCategory: "{0}をZIPでダウンロード",
                 errorMessage: "パッケージの処理中にエラーが発生しました。詳細はコンソールを確認してください。",
@@ -155,14 +171,16 @@
             },
             ko: {
                 title: "Package Extractor",
-                description: "이 구현은 ",
-                "description-end": " 라이브러리를 기반으로 합니다.",
+                description: "브라우저에서 .unitypackage 확장자 내의 텍스처, 모델 데이터 등을 개별적으로 가져올 수 있습니다. ",
+                "description-end": "이 구현은 ",
                 creator: "제작자: ",
-                dropZone: "Unity 패키지를 여기에 드래그 앤 드롭하세요",
+                repository: "리포지토리: ",
+                dropZone: ".unitypackage를 여기에 드래그 앤 드롭하세요",
                 excludeMeta: ".meta 파일 제외",
                 categorizeByExtension: "파일 확장자별로 분류",
                 maintainStructure: "파일 구조 유지",
                 enablePreview: "텍스처 미리보기 활성화",
+                showFileSize: "파일 크기 표시",
                 downloadAll: "모두 ZIP으로 다운로드",
                 downloadCategory: "{0}을(를) ZIP으로 다운로드",
                 errorMessage: "패키지 처리 중 오류가 발생했습니다. 자세한 내용은 콘솔을 확인하세요.",
@@ -249,6 +267,7 @@
         const categorizeByExtensionCheckbox = document.getElementById('categorizeByExtension');
         const maintainStructureCheckbox = document.getElementById('maintainStructure');
         const enablePreviewCheckbox = document.getElementById('enablePreview');
+        const showFileSizeCheckbox = document.getElementById('showFileSize');
         const downloadAllBtn = document.getElementById('downloadAllBtn');
         const extractor = new UnityExtractClient();
         let extractedFiles = {};
@@ -348,6 +367,13 @@
             a.download = maintainStructureCheckbox.checked ? path : path.split('/').pop();
             li.appendChild(a);
 
+            if (showFileSizeCheckbox.checked) {
+                const fileSize = document.createElement('span');
+                fileSize.className = 'file-info';
+                fileSize.textContent = ` (${formatFileSize(content.byteLength)})`;
+                li.appendChild(fileSize);
+            }
+
             if (enablePreviewCheckbox.checked && isImageFile(path)) {
                 const preview = document.createElement('img');
                 preview.className = 'preview';
@@ -364,6 +390,13 @@
             }
 
             return li;
+        }
+
+        function formatFileSize(bytes) {
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            if (bytes === 0) return '0 Byte';
+            const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+            return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
         }
 
         function isImageFile(path) {
